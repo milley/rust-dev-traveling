@@ -1,0 +1,5 @@
+[workspace]
+
+members = ["axum-dev-traveling"]
+
+resolver = "2"
