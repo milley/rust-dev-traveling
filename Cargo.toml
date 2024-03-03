@@ -1,5 +1,5 @@
 [workspace]
 
-members = ["axum-dev-traveling"]
+members = ["axum-dev-traveling", "sqlx-postgresql"]
 
 resolver = "2"
