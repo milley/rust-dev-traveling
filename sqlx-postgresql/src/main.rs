@@ -5,6 +5,7 @@ use axum::{
     routing::get,
     Router,
 };
+use dotenv::dotenv;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::time::Duration;
 use tokio::net::TcpListener;
@@ -12,6 +13,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -20,8 +22,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let db_connection_str = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://milley:123456@localhost/my_postgres".to_string());
+    let db_connection_str = std::env::var("DATABASE_URL").expect("can not found DATABASE_URL");
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .acquire_timeout(Duration::from_secs(3))
