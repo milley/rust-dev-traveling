@@ -1,12 +1,7 @@
-use axum::{
-    async_trait,
-    extract::{FromRef, FromRequestParts, State},
-    http::{request::Parts, StatusCode},
-    routing::get,
-    Router,
-};
+use axum::{extract::State, http::StatusCode, routing::get, Router};
 use dotenv::dotenv;
 use sqlx::postgres::{PgPool, PgPoolOptions};
+use sqlx_postgresql::{internal_error, DatabaseConnection};
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -51,25 +46,6 @@ async fn using_connection_pool_extractor(
         .map_err(internal_error)
 }
 
-struct DatabaseConnection(sqlx::pool::PoolConnection<sqlx::Postgres>);
-
-#[async_trait]
-impl<S> FromRequestParts<S> for DatabaseConnection
-where
-    PgPool: FromRef<S>,
-    S: Send + Sync,
-{
-    type Rejection = (StatusCode, String);
-
-    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let pool = PgPool::from_ref(state);
-
-        let conn = pool.acquire().await.map_err(internal_error)?;
-
-        Ok(Self(conn))
-    }
-}
-
 async fn using_connection_extractor(
     DatabaseConnection(mut conn): DatabaseConnection,
 ) -> Result<String, (StatusCode, String)> {
@@ -77,11 +53,4 @@ async fn using_connection_extractor(
         .fetch_one(&mut *conn)
         .await
         .map_err(internal_error)
-}
-
-fn internal_error<E>(err: E) -> (StatusCode, String)
-where
-    E: std::error::Error,
-{
-    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
