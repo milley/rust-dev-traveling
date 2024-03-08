@@ -1,7 +1,7 @@
-use axum::{extract::State, http::StatusCode, routing::get, Router};
+use axum::Router;
 use dotenv::dotenv;
-use sqlx::postgres::{PgPool, PgPoolOptions};
-use sqlx_postgresql::{internal_error, DatabaseConnection};
+use sqlx::postgres::PgPoolOptions;
+use sqlx_postgresql::conn_routes;
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -25,32 +25,9 @@ async fn main() {
         .await
         .expect("can't connect to database");
 
-    let app = Router::new()
-        .route(
-            "/",
-            get(using_connection_pool_extractor).post(using_connection_extractor),
-        )
-        .with_state(pool);
+    let app = Router::new().merge(conn_routes()).with_state(pool);
 
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await.unwrap();
-}
-
-async fn using_connection_pool_extractor(
-    State(pool): State<PgPool>,
-) -> Result<String, (StatusCode, String)> {
-    sqlx::query_scalar("select 'hello world from pg'")
-        .fetch_one(&pool)
-        .await
-        .map_err(internal_error)
-}
-
-async fn using_connection_extractor(
-    DatabaseConnection(mut conn): DatabaseConnection,
-) -> Result<String, (StatusCode, String)> {
-    sqlx::query_scalar("select 'hello world from pg'")
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(internal_error)
 }

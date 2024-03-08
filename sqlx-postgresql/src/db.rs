@@ -5,6 +5,8 @@ use axum::{
 };
 use sqlx::PgPool;
 
+use crate::internal_error;
+
 pub struct DatabaseConnection(pub sqlx::pool::PoolConnection<sqlx::Postgres>);
 
 #[async_trait]
@@ -22,11 +24,4 @@ where
 
         Ok(Self(conn))
     }
-}
-
-pub fn internal_error<E>(err: E) -> (StatusCode, String)
-where
-    E: std::error::Error,
-{
-    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
