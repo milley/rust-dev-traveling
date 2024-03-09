@@ -40,9 +40,9 @@ PATCH http://localhost:3000/todos/3 HTTP/1.1
 content-type: application/json
 
 {
-    "title": "今天回来了先写作业",
-    "completed": true
+    "title": "今天回来了先看电视",
+    "completed": false
 }
 
 ### todos_delete
-DELETE http://localhost:3000/todos/2 HTTP/1.1
+DELETE http://localhost:3000/todos/1 HTTP/1.1

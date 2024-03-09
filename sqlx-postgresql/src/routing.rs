@@ -41,7 +41,7 @@ async fn using_connection_extractor(
         .map_err(internal_error)
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub struct Todo {
     id: i32,
     title: String,
@@ -92,11 +92,12 @@ async fn todos_create(
     State(pool): State<PgPool>,
     Json(input): Json<CreateTodo>,
 ) -> impl IntoResponse {
-    let record = sqlx::query!(
+    let todo = sqlx::query_as!(
+        Todo,
         r#"
         INSERT INTO todos (title)
         VALUES ($1)
-        RETURNING id
+        RETURNING id, title, completed
         "#,
         input.title
     )
@@ -104,7 +105,7 @@ async fn todos_create(
     .await
     .unwrap();
 
-    (StatusCode::CREATED, Json(record.id))
+    (StatusCode::CREATED, Json(todo))
 }
 
 #[derive(Debug, Deserialize)]
@@ -118,7 +119,8 @@ async fn todos_update(
     State(pool): State<PgPool>,
     Json(input): Json<UpdateTodo>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let mut todo = sqlx::query_as!(
+    let mut todo = Todo::default();
+    let t = sqlx::query_as!(
         Todo,
         r#"
         SELECT id, title, completed
@@ -129,8 +131,11 @@ async fn todos_update(
     )
     .fetch_one(&pool)
     .await
-    .unwrap();
+    .ok();
 
+    if t.is_none() {
+        return Err(StatusCode::NOT_FOUND);
+    }
     if let Some(title) = input.title {
         todo.title = title;
     }
@@ -139,7 +144,7 @@ async fn todos_update(
         todo.completed = completed;
     }
 
-    let rows_affected = sqlx::query!(
+    sqlx::query!(
         r#"
         UPDATE todos
         SET title = $2, completed = $3
@@ -153,10 +158,6 @@ async fn todos_update(
     .await
     .unwrap()
     .rows_affected();
-
-    if rows_affected == 0 {
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    }
 
     Ok(Json(todo))
 }
