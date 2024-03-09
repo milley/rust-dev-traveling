@@ -18,3 +18,31 @@ content-type: application/json
 {
     "title": "2nd todo"
 }
+
+### todos_update -1
+PATCH http://localhost:3000/todos/2 HTTP/1.1
+content-type: application/json
+
+{
+    "title": "第三次记录"
+}
+
+### todos_update -2
+PATCH http://localhost:3000/todos/2 HTTP/1.1
+content-type: application/json
+
+{
+    "completed": true
+}
+
+### todos_update -3
+PATCH http://localhost:3000/todos/3 HTTP/1.1
+content-type: application/json
+
+{
+    "title": "今天回来了先写作业",
+    "completed": true
+}
+
+### todos_delete
+DELETE http://localhost:3000/todos/2 HTTP/1.1

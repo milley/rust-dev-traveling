@@ -1,8 +1,8 @@
 use axum::{
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
-    routing::get,
+    routing::{get, patch},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,9 @@ pub fn conn_routes() -> Router<Pool<Postgres>> {
 }
 
 pub fn todo_routes() -> Router<Pool<Postgres>> {
-    Router::new().route("/todos", get(todos_index).post(todos_create))
+    Router::new()
+        .route("/todos", get(todos_index).post(todos_create))
+        .route("/todos/:id", patch(todos_update).delete(todos_delete))
 }
 
 async fn using_connection_pool_extractor(
@@ -47,9 +49,9 @@ pub struct Todo {
 }
 
 #[derive(Debug, Deserialize, Default)]
-pub struct Pagination {
-    pub offset: Option<usize>,
-    pub limit: Option<usize>,
+struct Pagination {
+    offset: Option<usize>,
+    limit: Option<usize>,
 }
 
 async fn todos_index(
@@ -82,8 +84,8 @@ async fn todos_index(
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CreateTodo {
-    pub title: String,
+struct CreateTodo {
+    title: String,
 }
 
 async fn todos_create(
@@ -103,4 +105,77 @@ async fn todos_create(
     .unwrap();
 
     (StatusCode::CREATED, Json(record.id))
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdateTodo {
+    title: Option<String>,
+    completed: Option<bool>,
+}
+
+async fn todos_update(
+    Path(id): Path<i32>,
+    State(pool): State<PgPool>,
+    Json(input): Json<UpdateTodo>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let mut todo = sqlx::query_as!(
+        Todo,
+        r#"
+        SELECT id, title, completed
+        FROM todos
+        WHERE id = $1
+        "#,
+        id
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    if let Some(title) = input.title {
+        todo.title = title;
+    }
+
+    if let Some(completed) = input.completed {
+        todo.completed = completed;
+    }
+
+    let rows_affected = sqlx::query!(
+        r#"
+        UPDATE todos
+        SET title = $2, completed = $3
+        WHERE id = $1
+        "#,
+        todo.id,
+        todo.title,
+        todo.completed
+    )
+    .execute(&pool)
+    .await
+    .unwrap()
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    Ok(Json(todo))
+}
+
+async fn todos_delete(Path(id): Path<i32>, State(pool): State<PgPool>) -> impl IntoResponse {
+    let rows_affected = sqlx::query!(
+        r#"
+            DELETE FROM todos WHERE id = $1
+        "#,
+        id
+    )
+    .execute(&pool)
+    .await
+    .unwrap()
+    .rows_affected();
+
+    if rows_affected == 0 {
+        StatusCode::NOT_FOUND
+    } else {
+        StatusCode::OK
+    }
 }
