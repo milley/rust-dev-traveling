@@ -1,7 +1,7 @@
 use axum::Router;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
-use sqlx_postgresql::conn_routes;
+use sqlx_postgresql::{conn_routes, todo_routes};
 use std::time::Duration;
 use tokio::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -25,7 +25,10 @@ async fn main() {
         .await
         .expect("can't connect to database");
 
-    let app = Router::new().merge(conn_routes()).with_state(pool);
+    let app = Router::new()
+        .merge(conn_routes())
+        .merge(todo_routes())
+        .with_state(pool);
 
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
     tracing::debug!("listening on {}", listener.local_addr().unwrap());

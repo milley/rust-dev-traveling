@@ -1,3 +1,5 @@
+### RUST_LOG=debug cargo run
+
 ###
 
 GET http://localhost:3000/ HTTP/1.1
@@ -5,3 +7,14 @@ GET http://localhost:3000/ HTTP/1.1
 ###
 
 POST http://localhost:3000 HTTP/1.1
+
+### todos_index
+GET http://localhost:3000/todos HTTP/1.1
+
+### todos_create
+POST http://localhost:3000/todos HTTP/1.1
+content-type: application/json
+
+{
+    "title": "2nd todo"
+}

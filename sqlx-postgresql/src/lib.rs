@@ -3,7 +3,7 @@ mod routing;
 
 use axum::http::StatusCode;
 pub use db::DatabaseConnection;
-pub use routing::conn_routes;
+pub use routing::{conn_routes, todo_routes};
 
 pub fn internal_error<E>(err: E) -> (StatusCode, String)
 where
