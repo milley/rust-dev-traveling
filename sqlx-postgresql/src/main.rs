@@ -1,9 +1,11 @@
+use std::time::Duration;
+
 use axum::Router;
 use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use sqlx_postgresql::{conn_routes, todo_routes};
-use std::time::Duration;
 use tokio::net::TcpListener;
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -28,6 +30,8 @@ async fn main() {
     let app = Router::new()
         .merge(conn_routes())
         .merge(todo_routes())
+        .layer(CorsLayer::permissive())
+        .layer(TraceLayer::new_for_http())
         .with_state(pool);
 
     let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();

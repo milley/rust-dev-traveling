@@ -136,6 +136,8 @@ async fn todos_update(
     if t.is_none() {
         return Err(StatusCode::NOT_FOUND);
     }
+
+    todo.id = t.unwrap().id;
     if let Some(title) = input.title {
         todo.title = title;
     }

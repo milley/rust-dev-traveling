@@ -36,13 +36,13 @@ content-type: application/json
 }
 
 ### todos_update -3
-PATCH http://localhost:3000/todos/3 HTTP/1.1
+PATCH http://localhost:3000/todos/8 HTTP/1.1
 content-type: application/json
 
 {
     "title": "今天回来了先看电视",
-    "completed": false
+    "completed": true
 }
 
 ### todos_delete
-DELETE http://localhost:3000/todos/1 HTTP/1.1
+DELETE http://localhost:3000/todos/9 HTTP/1.1
